@@ -430,7 +430,17 @@ export function applyMatch(
   next.mmr = Math.max(100, r.mmr + eloShift(win, r.mmr, opp.mmr));
   if (flawless) next.flawless = r.flawless + 1;
 
-  const empty: PrBreakdown = { base: 0, spread: 0, streak: 0, performance: 0, total: 0 };
+  const empty: PrBreakdown = { base: 0, spread: 0, streak: 0, performance: 0, rival: 0, total: 0 };
+
+  // ---------------- nêmesis: quem te vence volta para a revanche
+  if (opp.rival && r.rival) {
+    next.rival = win
+      ? null
+      : { ...r.rival, wins: Math.min(4, r.rival.wins + 1), losses: r.rival.losses };
+    if (win && r.rival) next.rival = null;
+  } else if (!win) {
+    next.rival = { pilot: opp.pilot, rankIndex: opp.rank.index, robot: opp.robot, wins: 1, losses: 0 };
+  }
 
   // ---------------- classificatórias
   if (isPlacing(r)) {
@@ -536,8 +546,8 @@ export function applyMatch(
   // ---------------- partida ranqueada normal
   const streak = r.streak;
   const breakdown = win
-    ? gainBreakdown(opp.spread, streak, perf)
-    : lossBreakdown(opp.spread, streak, perf);
+    ? gainBreakdown(opp.spread, streak, opp.rival, perf)
+    : lossBreakdown(opp.spread, streak, opp.rival, perf);
   const delta = breakdown.total;
 
   let rankIndex = r.rankIndex;
