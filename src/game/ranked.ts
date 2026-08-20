@@ -667,6 +667,75 @@ export function claimReward(r: RankedState, index: number): { state: RankedState
 }
 
 // ------------------------------------------------------------- estatísticas
+export interface RankedMission {
+  id: string;
+  name: string;
+  desc: string;
+  progress: number;
+  goal: number;
+  gold: number;
+  done: boolean;
+  claimed: boolean;
+  claimable: boolean;
+}
+
+/** Missões da temporada — objetivos de longo prazo com recompensa em ouro. */
+export function missionList(r: RankedState): RankedMission[] {
+  const defs: { id: string; name: string; desc: string; progress: number; goal: number; gold: number }[] = [
+    {
+      id: "matches10",
+      name: "VETERANO DA FILA",
+      desc: "Dispute 10 partidas ranqueadas na temporada",
+      progress: r.matches,
+      goal: 10,
+      gold: 320,
+    },
+    {
+      id: "streak3",
+      name: "EMBALADO",
+      desc: "Alcance 3 vitorias seguidas",
+      progress: Math.max(r.bestStreak, Math.max(0, r.streak)),
+      goal: 3,
+      gold: 400,
+    },
+    {
+      id: "flawless3",
+      name: "SEM UM ARRANHAO",
+      desc: "Conquiste 3 vitorias perfeitas",
+      progress: r.flawless,
+      goal: 3,
+      gold: 520,
+    },
+    {
+      id: "rank4",
+      name: "ELITE DE OURO",
+      desc: "Chegue ao rank Ouro ou acima",
+      progress: Math.min(r.bestRankIndex, 4),
+      goal: 4,
+      gold: 700,
+    },
+    {
+      id: "nemesis",
+      name: "CACA AO NEMESIS",
+      desc: "Derrote um nemesis na revanche",
+      progress: Math.min(1, r.history.filter((h) => h.win && h.kind === "ranked").length && r.rival === null ? 1 : 0),
+      goal: 1,
+      gold: 450,
+    },
+  ];
+  return defs.map((d) => {
+    const done = d.progress >= d.goal;
+    const claimed = r.missionsClaimed.includes(d.id);
+    return { ...d, progress: Math.min(d.progress, d.goal), done, claimed, claimable: done && !claimed };
+  });
+}
+
+export function claimMission(r: RankedState, id: string): { state: RankedState; gold: number } {
+  const m = missionList(r).find((x) => x.id === id);
+  if (!m || !m.claimable) return { state: r, gold: 0 };
+  return { state: { ...r, missionsClaimed: [...r.missionsClaimed, id] }, gold: m.gold };
+}
+
 export interface RankedStats {
   played: number;
   winrate: number;
