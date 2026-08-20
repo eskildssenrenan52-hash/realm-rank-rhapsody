@@ -433,13 +433,18 @@ export function applyMatch(
   const empty: PrBreakdown = { base: 0, spread: 0, streak: 0, performance: 0, rival: 0, total: 0 };
 
   // ---------------- nêmesis: quem te vence volta para a revanche
-  if (opp.rival && r.rival) {
-    next.rival = win
-      ? null
-      : { ...r.rival, wins: Math.min(4, r.rival.wins + 1), losses: r.rival.losses };
-    if (win && r.rival) next.rival = null;
-  } else if (!win) {
-    next.rival = { pilot: opp.pilot, rankIndex: opp.rank.index, robot: opp.robot, wins: 1, losses: 0 };
+  if (!isPlacing(r) && !r.promo) {
+    if (opp.rival && r.rival) {
+      next.rival = win ? null : { ...r.rival, wins: Math.min(4, r.rival.wins + 1) };
+    } else if (!win) {
+      next.rival = {
+        pilot: opp.pilot,
+        rankIndex: opp.rank.index,
+        robot: opp.robot,
+        wins: 1,
+        losses: 0,
+      };
+    }
   }
 
   // ---------------- classificatórias
