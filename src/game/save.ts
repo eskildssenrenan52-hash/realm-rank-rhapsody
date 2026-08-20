@@ -4,6 +4,7 @@ import { playerMaxXP, type RobotSave } from "./engine";
 import { ROBOT_MAP, ROBOTS, STARTER_ROBOTS } from "./robots";
 import {
   applyMatch,
+  claimMission,
   claimReward,
   initialRanked,
   newSeason,
@@ -254,6 +255,14 @@ export function applyRankedMatch(
 /** Coleta a recompensa de ouro de um rank já alcançado. */
 export function claimRankReward(rankIndex: number): number {
   const res = claimReward(state.ranked, rankIndex);
+  if (res.gold <= 0) return 0;
+  setState((s) => ({ ...s, ranked: res.state, gold: s.gold + res.gold }));
+  return res.gold;
+}
+
+/** Coleta a recompensa de uma missão de temporada concluída. */
+export function claimRankedMission(id: string): number {
+  const res = claimMission(state.ranked, id);
   if (res.gold <= 0) return 0;
   setState((s) => ({ ...s, ranked: res.state, gold: s.gold + res.gold }));
   return res.gold;
