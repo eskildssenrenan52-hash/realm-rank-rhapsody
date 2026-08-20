@@ -257,6 +257,10 @@ export interface RankedOpponent {
   stage: StageSetup;
   /** rótulo do contexto da partida. */
   context: "ranked" | "promo" | "placement";
+  /** true quando o oponente é o seu nêmesis. */
+  rival: boolean;
+  /** chassi usado como retrato do piloto. */
+  robot: string;
 }
 
 const RANKED_ARENAS = ["dojo", "orbital", "sky", "frozen", "volcano"];
@@ -278,6 +282,8 @@ function clampRank(i: number): number {
 export function matchmake(r: RankedState, teamLevel: number): RankedOpponent {
   const placing = isPlacing(r);
   const promo = !placing && r.promo ? r.promo : null;
+  // nêmesis só aparece em partida ranqueada comum.
+  const rival = !placing && !promo && r.rival && Math.random() < 0.4 ? r.rival : null;
 
   const base = placing
     ? clampRank(3 + r.placementsDone * 2)
@@ -288,35 +294,45 @@ export function matchmake(r: RankedState, teamLevel: number): RankedOpponent {
   // ±2 divisões, enviesado para cima quando o MMR está acima do rank exibido.
   const mmrBias = Math.max(-1, Math.min(1, Math.round((r.mmr - (ratingOf(r) + 450)) / 90)));
   const spreadRoll = Math.round((Math.random() - 0.45) * 4) + (promo ? 1 : mmrBias);
-  const index = clampRank(base + spreadRoll);
+  const index = rival ? clampRank(Math.max(rival.rankIndex, r.rankIndex)) : clampRank(base + spreadRoll);
   const rank = rankAt(index);
   const diff = index - (placing ? base : promo ? r.rankIndex : r.rankIndex);
 
   const arche = ARCHETYPES[hash(`${index}-${r.matches}-${Math.random()}`) % ARCHETYPES.length] as Archetype;
   const baseCount = index >= 18 ? 4 : index >= 9 ? 3 : index >= 3 ? 2 : 1;
   const count = Math.max(1, Math.min(4, baseCount + arche.count));
-  const level = Math.max(1, teamLevel + Math.round(index * 0.4) + diff + arche.level);
+  const level = Math.max(
+    1,
+    teamLevel + Math.round(index * 0.4) + diff + arche.level + (rival ? 1 + rival.wins : 0),
+  );
   const rarity = arche.id === "prototype" ? "gold" : rarityFor(index);
   const enemies = randomEnemyTeam({
     level,
     count,
-    trained: Math.floor(index / 3) + arche.trained,
+    trained: Math.floor(index / 3) + arche.trained + (rival ? rival.wins : 0),
     ...(rarity ? { rarity: rarity as "gold" | "silver" } : {}),
   });
 
   return {
-    pilot: pilotName(`${index}-${Date.now()}-${Math.random()}`),
+    pilot: rival ? rival.pilot : pilotName(`${index}-${Date.now()}-${Math.random()}`),
     rank,
     spread: diff,
     archetype: arche,
-    mmr: index * 100 + 450 + (hash(`m${index}`) % 90),
+    mmr: index * 100 + 450 + (hash(`m${index}`) % 90) + (rival ? 40 : 0),
     context: placing ? "placement" : promo ? "promo" : "ranked",
+    rival: !!rival,
+    robot: rival
+      ? rival.robot
+      : ((enemies[0] as RobotSave | undefined)?.id ??
+        (ROBOTS[hash(`r${index}`) % ROBOTS.length] as { id: string }).id),
     stage: {
       label: placing
         ? `CLASSIFICATORIA ${r.placementsDone + 1}/${PLACEMENT_MATCHES}`
         : promo
           ? `SERIE DE PROMOCAO — ${rankAt(promo.targetIndex).name}`
-          : rank.name,
+          : rival
+            ? `NEMESIS — ${rival.pilot}`
+            : rank.name,
       arena: RANKED_ARENAS[index % RANKED_ARENAS.length] as string,
       enemies,
       reward: 1.35 + index * 0.1 + (promo ? 0.5 : 0),
