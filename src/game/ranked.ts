@@ -129,6 +129,17 @@ export interface PromoSeries {
   losses: number;
 }
 
+/** Nêmesis: piloto que te venceu e volta a aparecer na fila. */
+export interface RivalState {
+  pilot: string;
+  rankIndex: number;
+  robot: string;
+  /** vitórias dele sobre você. */
+  wins: number;
+  /** suas vitórias sobre ele. */
+  losses: number;
+}
+
 export interface RankedState {
   season: number;
   placementsDone: number;
@@ -152,6 +163,10 @@ export interface RankedState {
   /** vitórias perfeitas (sem perder nenhum robô). */
   flawless: number;
   seasonStartedAt: number;
+  /** missões da temporada já coletadas. */
+  missionsClaimed: string[];
+  /** nêmesis atual da temporada. */
+  rival: RivalState | null;
 }
 
 export function initialRanked(): RankedState {
@@ -174,6 +189,8 @@ export function initialRanked(): RankedState {
     matches: 0,
     flawless: 0,
     seasonStartedAt: Date.now(),
+    missionsClaimed: [],
+    rival: null,
   };
 }
 
@@ -192,6 +209,10 @@ export function normalizeRanked(raw: unknown): RankedState {
     claimed: Array.isArray(r.claimed) ? r.claimed.filter((n) => typeof n === "number") : [],
     history: Array.isArray(r.history) ? r.history.slice(0, 12) : [],
     promo: r.promo && typeof r.promo === "object" ? r.promo : null,
+    missionsClaimed: Array.isArray(r.missionsClaimed)
+      ? r.missionsClaimed.filter((s) => typeof s === "string")
+      : [],
+    rival: r.rival && typeof r.rival === "object" ? r.rival : null,
   };
 }
 
