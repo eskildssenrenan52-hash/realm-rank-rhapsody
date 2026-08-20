@@ -358,6 +358,7 @@ export interface PrBreakdown {
   spread: number;
   streak: number;
   performance: number;
+  rival: number;
   total: number;
 }
 
@@ -386,22 +387,24 @@ function perfScore(p?: MatchPerf): number {
   return alive * 0.7 + fast * 0.3;
 }
 
-function gainBreakdown(spread: number, streak: number, p?: MatchPerf): PrBreakdown {
+function gainBreakdown(spread: number, streak: number, isRival: boolean, p?: MatchPerf): PrBreakdown {
   const base = 20;
   const sp = spread * 6;
   const st = Math.min(12, Math.max(0, streak) * 3);
   const pf = Math.round(perfScore(p) * 10);
-  const total = Math.max(9, Math.min(48, Math.round(base + sp + st + pf)));
-  return { base, spread: sp, streak: st, performance: pf, total };
+  const rv = isRival ? 8 : 0;
+  const total = Math.max(9, Math.min(56, Math.round(base + sp + st + pf + rv)));
+  return { base, spread: sp, streak: st, performance: pf, rival: rv, total };
 }
 
-function lossBreakdown(spread: number, streak: number, p?: MatchPerf): PrBreakdown {
+function lossBreakdown(spread: number, streak: number, isRival: boolean, p?: MatchPerf): PrBreakdown {
   const base = -19;
   const sp = spread * 5; // perder para alguém mais forte dói menos
   const st = -Math.min(10, Math.max(0, -streak) * 2);
   const pf = Math.round(perfScore(p) * 6); // resistir bem reduz a perda
-  const total = -Math.max(5, Math.min(38, Math.round(-(base + sp + st + pf))));
-  return { base, spread: sp, streak: st, performance: pf, total };
+  const rv = isRival ? -3 : 0;
+  const total = -Math.max(5, Math.min(40, Math.round(-(base + sp + st + pf + rv))));
+  return { base, spread: sp, streak: st, performance: pf, rival: rv, total };
 }
 
 function pushLog(next: RankedState, log: RankedMatchLog) {
