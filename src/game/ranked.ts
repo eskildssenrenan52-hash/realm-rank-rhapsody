@@ -216,7 +216,7 @@ export function normalizeRanked(raw: unknown): RankedState {
       ? r.missionsClaimed.filter((s) => typeof s === "string")
       : [],
     rival: r.rival && typeof r.rival === "object" ? r.rival : null,
-    nemesisBeaten: num(r.nemesisBeaten, 0),
+    nemesisBeaten: Math.max(0, Math.round(r.nemesisBeaten ?? 0)),
   };
 }
 
