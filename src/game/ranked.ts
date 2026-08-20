@@ -167,6 +167,8 @@ export interface RankedState {
   missionsClaimed: string[];
   /** nêmesis atual da temporada. */
   rival: RivalState | null;
+  /** nêmesis derrotados na revanche. */
+  nemesisBeaten: number;
 }
 
 export function initialRanked(): RankedState {
@@ -191,6 +193,7 @@ export function initialRanked(): RankedState {
     seasonStartedAt: Date.now(),
     missionsClaimed: [],
     rival: null,
+    nemesisBeaten: 0,
   };
 }
 
@@ -213,6 +216,7 @@ export function normalizeRanked(raw: unknown): RankedState {
       ? r.missionsClaimed.filter((s) => typeof s === "string")
       : [],
     rival: r.rival && typeof r.rival === "object" ? r.rival : null,
+    nemesisBeaten: num(r.nemesisBeaten, 0),
   };
 }
 
@@ -436,6 +440,7 @@ export function applyMatch(
   if (!isPlacing(r) && !r.promo) {
     if (opp.rival && r.rival) {
       next.rival = win ? null : { ...r.rival, wins: Math.min(4, r.rival.wins + 1) };
+      if (win) next.nemesisBeaten = r.nemesisBeaten + 1;
     } else if (!win) {
       next.rival = {
         pilot: opp.pilot,
@@ -630,7 +635,9 @@ export function applyMatch(
     newRank: rankAt(rankIndex),
     prevRank,
     prevPr: r.pr,
-    gold: Math.round((win ? 150 : 45) + rankIndex * 16 + (flawless ? 50 : 0)),
+    gold: Math.round(
+      (win ? 150 : 45) + rankIndex * 16 + (flawless ? 50 : 0) + (win && opp.rival ? 120 : 0),
+    ),
   };
 }
 
@@ -718,7 +725,7 @@ export function missionList(r: RankedState): RankedMission[] {
       id: "nemesis",
       name: "CACA AO NEMESIS",
       desc: "Derrote um nemesis na revanche",
-      progress: Math.min(1, r.history.filter((h) => h.win && h.kind === "ranked").length && r.rival === null ? 1 : 0),
+      progress: r.nemesisBeaten,
       goal: 1,
       gold: 450,
     },
